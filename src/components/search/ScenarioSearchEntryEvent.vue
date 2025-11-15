@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type PropType } from 'vue'
+import { type PropType, defineExpose } from 'vue'
 import NexonI18nDataOutput from '@/components/genetic/NexonI18nDataOutput.vue'
 import type { NexonL10nData } from '@/types/OutsourcedData'
 import { checkIfScenarioIdIsMain, getScenarioExtraDataById } from '@/tool/StoryTool'
@@ -160,6 +160,10 @@ const exportScript = async () => {
     alert(t('export-error'))
   }
 }
+
+defineExpose({
+  exportScript
+})
 </script>
 
 <template>

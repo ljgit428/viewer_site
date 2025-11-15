@@ -124,6 +124,7 @@
 
   "comp-search-result-btn-view": "View",
   "comp-search-result-btn-export": "Export Script",
+  "comp-search-result-btn-export-all": "Bulk Export Scripts",
   "comp-search-result-desc": "Descriptions: ",
   "comp-search-result-main-before-battle": "Before Battle",
   "comp-search-result-narrator": "Narrator",

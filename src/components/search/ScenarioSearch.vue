@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, onBeforeUpdate } from 'vue'
 import { useSetting } from '@/stores/setting'
 import ScenarioSearchEntryBond from '@/components/search/ScenarioSearchEntryBond.vue'
 import { getNexonL10nDataFlattened } from '@/tool/StoryTool'
@@ -27,6 +27,7 @@ import { useSearchVars } from '@/stores/search'
 import PvSelect from 'primevue/select'
 import PvFluid from 'primevue/fluid'
 import PvDivider from 'primevue/divider'
+import PvButton from 'primevue/button'
 import CharacterSheet from '@/components/CharacterSheet.vue'
 import {
   DirectoryDataCommonFileIndexMomo,
@@ -48,6 +49,12 @@ import { AsyncTaskPool } from '@/tool/AsyncTaskPool'
 import { createDictionaryWithDefault } from '@/tool/Utils'
 import { getTranslation } from '@/tool/translate/MtDispatcher'
 import PvMessage from 'primevue/message'
+
+const scenarioEntryRefs = ref<any[]>([])
+
+onBeforeUpdate(() => {
+  scenarioEntryRefs.value = []
+})
 
 const selectType = ref('')
 const i18n = useI18n()
@@ -774,7 +781,18 @@ watch(
     <!-- 显示结果 -->
     <div v-if="selectType === 'event'">
       <div v-loading="!dataSelectEventLoaded" :key="uiLang">
-        <h2>{{ $t('comp-search-scenario-result') }}</h2>
+        <h2>
+          {{ $t('comp-search-scenario-result') }}
+          <PvButton
+            v-if="dataSelectEventStory.get(selectEventName)?.length"
+            @click="bulkExportScripts"
+            severity="info"
+            size="small"
+            style="margin-left: 1rem"
+          >
+            {{ $t('comp-search-result-btn-export-all') }}
+          </PvButton>
+        </h2>
         <ScenarioSearchChapterMetadata
           :data="dataSelectEventMetadata.get(selectEventName)!"
           :data-mt="dataMt.eventMetadata.value"
@@ -782,6 +800,7 @@ watch(
         />
         <div :key="uiLang + '_' + selectEventName" class="search-event">
           <ScenarioSearchEntryEvent
+            :ref="(el) => { if (el) scenarioEntryRefs.push(el) }"
             :data_no="idx + 1"
             :data="entry"
             :data-mt="dataMt.eventStory.value[idx]"
@@ -812,7 +831,18 @@ watch(
     </div>
     <div v-else-if="selectType === 'main'">
       <div v-loading="!dataSelectMainCurrLoaded" :key="uiLang">
-        <h2>{{ $t('comp-search-scenario-select-result') }}</h2>
+        <h2>
+          {{ $t('comp-search-scenario-select-result') }}
+          <PvButton
+            v-if="dataSelectMainCurrStory.length > 0"
+            @click="bulkExportScripts"
+            severity="info"
+            size="small"
+            style="margin-left: 1rem"
+          >
+            {{ $t('comp-search-result-btn-export-all') }}
+          </PvButton>
+        </h2>
         <ScenarioSearchChapterMetadata
           :data="selectMainVolumeMetadata"
           :data-mt="dataMt.mainVolumeMetadata.value"
@@ -826,6 +856,7 @@ watch(
         />
         <div :key="uiLang + '_' + selectMainChapter">
           <ScenarioSearchEntryEvent
+            :ref="(el) => { if (el) scenarioEntryRefs.push(el) }"
             :data_no="idx + 1"
             :data="entry"
             :data-mt="dataMt.mainStory.value[idx]"
@@ -837,7 +868,18 @@ watch(
     </div>
     <div v-else-if="selectType !== ''">
       <div v-loading="!dataSelectMainCurrLoaded" :key="uiLang">
-        <h2>{{ $t('comp-search-scenario-select-result') }}</h2>
+        <h2>
+          {{ $t('comp-search-scenario-select-result') }}
+          <PvButton
+            v-if="dataSelectMainCurrStory.length > 0"
+            @click="bulkExportScripts"
+            severity="info"
+            size="small"
+            style="margin-left: 1rem"
+          >
+            {{ $t('comp-search-result-btn-export-all') }}
+          </PvButton>
+        </h2>
         <ScenarioSearchChapterMetadata
           :data="selectMainChapterMetadata"
           :data-mt="dataMt.mainChapterMetadata.value"
@@ -845,6 +887,7 @@ watch(
         />
         <div :key="uiLang + '_' + selectMainChapter">
           <ScenarioSearchEntryEvent
+            :ref="(el) => { if (el) scenarioEntryRefs.push(el) }"
             :data_no="idx + 1"
             :data="entry"
             :data-mt="dataMt.mainStory.value[idx]"

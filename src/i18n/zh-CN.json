@@ -124,6 +124,7 @@
 
   "comp-search-result-btn-view": "查看故事",
   "comp-search-result-btn-export": "导出剧本",
+  "comp-search-result-btn-export-all": "批量导出剧本",
   "comp-search-result-desc": "简介：",
   "comp-search-result-main-before-battle": "战斗前",
   "comp-search-result-narrator": "旁白",
