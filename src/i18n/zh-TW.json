@@ -126,6 +126,7 @@
   "comp-search-result-btn-export": "匯出劇本",
   "comp-search-result-desc": "簡介：",
   "comp-search-result-main-before-battle": "戰鬥前",
+  "comp-search-result-narrator": "旁白",
   "comp-search-result-main-after-battle": "戰鬥後",
   "export-error": "匯出劇本失敗，請重試。",
 

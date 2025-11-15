@@ -126,6 +126,7 @@
   "comp-search-result-btn-export": "Export Script",
   "comp-search-result-desc": "Descriptions: ",
   "comp-search-result-main-before-battle": "Before Battle",
+  "comp-search-result-narrator": "Narrator",
   "comp-search-result-main-after-battle": "After Battle",
   "export-error": "Failed to export scenario. Please try again.",
 

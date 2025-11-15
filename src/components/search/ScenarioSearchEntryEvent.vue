@@ -3,6 +3,9 @@ import { type PropType } from 'vue'
 import NexonI18nDataOutput from '@/components/genetic/NexonI18nDataOutput.vue'
 import type { NexonL10nData } from '@/types/OutsourcedData'
 import { checkIfScenarioIdIsMain, getScenarioExtraDataById } from '@/tool/StoryTool'
+import { httpGetAsync } from '@/tool/HttpRequest'
+import { getScenarioDataEntryCharName } from '@/script/ScenarioUiMt'
+import { i18nLangAll } from '@/tool/ConstantComputed'
 import ScenarioIsAfterBattleBadge from '@/components/genetic/ScenarioIsAfterBattleBadge.vue'
 import { useSetting } from '@/stores/setting'
 import { useI18n } from 'vue-i18n'
@@ -43,41 +46,86 @@ if (isScenarioMain || (props.data.id.startsWith('1100') && props.data.id.length 
   scenarioIdIsAfterBattleFlag = 'A'
 }
 
-const exportScenario = async () => {
+const exportScript = async () => {
   try {
-    // Fetch scenario data
-    const response = await fetch(`/data/story/normal/${props.data.id}.json`)
-    if (!response.ok) {
-      throw new Error(`Failed to fetch scenario data: ${response.statusText}`)
+    const storyId = props.data.id
+    const setting = useSetting()
+
+    const selectedLangs = i18nLangAll.value.filter((lang) => lang !== 'null')
+    const targetLang = selectedLangs.length > 0 ? selectedLangs[0] : 'c_cn'
+    const langFallbacks = ['c_cn', 'g_tw_cn', 'g_tw', 'j_ja', 'g_en']
+
+    const getBestAvailableText = (textObject: Record<string, string> | undefined) => {
+      if (!textObject) return ''
+      let text = textObject[targetLang]
+      if (text && !text.includes('not found') && !text.includes('LocalizeError')) {
+        return text
+      }
+      for (const lang of langFallbacks) {
+        text = textObject[lang]
+        if (text && !text.includes('not found') && !text.includes('LocalizeError')) {
+          return text
+        }
+      }
+      return ''
     }
-    const scenarioData = await response.json()
-    
-    // Create export content
-    const exportContent = {
-      id: props.data.id,
-      name: props.data.name,
-      description: props.data.desc,
-      actualScenarioNo: scenarioIdExtraData.actualScenarioNo,
-      isAfterBattle: scenarioIdExtraData.isAfterBattle,
-      isAfterBattleFlag: scenarioIdIsAfterBattleFlag,
-      data: scenarioData
+
+    const responseText = await httpGetAsync(`/data/story/normal/${storyId}.json`)
+    const storyData = JSON.parse(responseText)
+
+    const storyTitle = getBestAvailableText(props.data.name)
+    let scriptText = `${t('comp-search-scenario-datasheet-item-1')}: ${storyTitle}\n\n`
+
+    const cleanDialogue = (text: string) => {
+      if (!text) return ''
+      return text
+        .replace(/\[USERNAME\]/g, setting.username)
+        .replace(/\[\\n\]/g, '\n')
+        .replace(/\[img:.*?\]/g, '')
+        .replace(/<rt>.*?<\/rt>|<rp>.*?<\/rp>/g, '') // Remove ruby annotations
+        .replace(/<[^>]*>/g, '') // Remove all other HTML tags
+        .trim()
     }
-    
-    // Convert to JSON string
-    const jsonString = JSON.stringify(exportContent, null, 2)
-    
-    // Create blob and download
-    const blob = new Blob([jsonString], { type: 'application/json' })
+
+    for (const entry of storyData) {
+      if (['cmd', 'video', 'title'].includes(entry.DataType)) continue
+
+      let dialogue = cleanDialogue(getBestAvailableText(entry.Message))
+      if (!dialogue) continue
+
+      if (entry.SelectionGroup !== 0) {
+        dialogue += ` (SeleGroup: ${entry.SelectionGroup})`
+      }
+      if (entry.SelectionToGroup !== -1) {
+        dialogue += ` (SeleToGroup: ${entry.SelectionToGroup})`
+      }
+
+      if (entry.DataType === 'speaker') {
+        const charInfo = getScenarioDataEntryCharName(entry)
+        let speaker = getBestAvailableText(charInfo.Name)
+        if (!speaker) speaker = t('comp-search-result-narrator')
+        scriptText += `${speaker}: ${dialogue}\n`
+      } else if (entry.DataType === 'option') {
+        scriptText += `${setting.username}: ${dialogue}\n`
+      } else if (['na', 'st', 'stm', 'place'].includes(entry.DataType)) {
+        scriptText += `${t('comp-search-result-narrator')}: ${dialogue}\n`
+      } else {
+        scriptText += `${dialogue}\n`
+      }
+    }
+
+    const sanitizedTitle = storyTitle.replace(/[\\?%*:|"<>]/g, '-') || 'scenario'
+    const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `${props.data.id}_scenario.json`
+    link.download = `${storyId}_${sanitizedTitle}.txt`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
     URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Error exporting scenario:', error)
+    console.error('Error exporting script:', error)
     alert(t('export-error'))
   }
 }
@@ -106,11 +154,7 @@ const exportScenario = async () => {
       {{ $t('comp-search-result-btn-view') }}
     </PvButton>
     <span>&nbsp;</span>
-    <PvButton
-      severity="secondary"
-      size="small"
-      @click="exportScenario"
-    >
+    <PvButton severity="secondary" size="small" @click="exportScript">
       {{ $t('comp-search-result-btn-export') }}
     </PvButton>
   </h3>
