@@ -123,9 +123,11 @@
   "comp-search-result-entry-bond-story": "詳細故事頁",
 
   "comp-search-result-btn-view": "檢視故事",
+  "comp-search-result-btn-export": "匯出劇本",
   "comp-search-result-desc": "簡介：",
   "comp-search-result-main-before-battle": "戰鬥前",
   "comp-search-result-main-after-battle": "戰鬥後",
+  "export-error": "匯出劇本失敗，請重試。",
 
   "char-search-tip1": "進入",
   "char-search-tip2": "Momotalk詳細頁",

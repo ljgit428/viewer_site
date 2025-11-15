@@ -5,12 +5,14 @@ import type { NexonL10nData } from '@/types/OutsourcedData'
 import { checkIfScenarioIdIsMain, getScenarioExtraDataById } from '@/tool/StoryTool'
 import ScenarioIsAfterBattleBadge from '@/components/genetic/ScenarioIsAfterBattleBadge.vue'
 import { useSetting } from '@/stores/setting'
+import { useI18n } from 'vue-i18n'
 
 import PvTag from 'primevue/tag'
 import PvButton from 'primevue/button'
 import PvDivider from 'primevue/divider'
 
 const setting = useSetting()
+const { t } = useI18n()
 
 const props = defineProps({
   data: {
@@ -40,6 +42,45 @@ if (isScenarioMain || (props.data.id.startsWith('1100') && props.data.id.length 
   scenarioIdExtraData = { isAfterBattle: false, actualScenarioNo: props.data_no }
   scenarioIdIsAfterBattleFlag = 'A'
 }
+
+const exportScenario = async () => {
+  try {
+    // Fetch scenario data
+    const response = await fetch(`/data/story/normal/${props.data.id}.json`)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch scenario data: ${response.statusText}`)
+    }
+    const scenarioData = await response.json()
+    
+    // Create export content
+    const exportContent = {
+      id: props.data.id,
+      name: props.data.name,
+      description: props.data.desc,
+      actualScenarioNo: scenarioIdExtraData.actualScenarioNo,
+      isAfterBattle: scenarioIdExtraData.isAfterBattle,
+      isAfterBattleFlag: scenarioIdIsAfterBattleFlag,
+      data: scenarioData
+    }
+    
+    // Convert to JSON string
+    const jsonString = JSON.stringify(exportContent, null, 2)
+    
+    // Create blob and download
+    const blob = new Blob([jsonString], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${props.data.id}_scenario.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Error exporting scenario:', error)
+    alert(t('export-error'))
+  }
+}
 </script>
 
 <template>
@@ -63,6 +104,14 @@ if (isScenarioMain || (props.data.id.startsWith('1100') && props.data.id.length 
       :to="`/scenario/${data.id}`"
     >
       {{ $t('comp-search-result-btn-view') }}
+    </PvButton>
+    <span>&nbsp;</span>
+    <PvButton
+      severity="secondary"
+      size="small"
+      @click="exportScenario"
+    >
+      {{ $t('comp-search-result-btn-export') }}
     </PvButton>
   </h3>
   <div v-show="setting.show_story_desc">
