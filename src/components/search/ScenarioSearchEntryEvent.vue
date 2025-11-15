@@ -88,6 +88,14 @@ const exportScript = async () => {
         ko: '제목',
         th: 'ชื่อเรื่อง',
     };
+    const senseiTranslations: Record<string, string> = {
+        en: 'Sensei',
+        zh_CN: '老师',
+        zh_TW: '老師',
+        ja: '先生',
+        ko: '선생님',
+        th: 'เซ็นเซย์',
+    };
 
     const responseText = await httpGetAsync(`/data/story/normal/${storyId}.json`)
     const storyData = JSON.parse(responseText)
@@ -114,7 +122,10 @@ const exportScript = async () => {
 
     const narratorText = narratorTranslations[uiLocale] || narratorTranslations['zh_CN'];
     const titleText = titleTranslations[uiLocale] || titleTranslations['zh_CN'];
-    let scriptText = `${titleText}: ${cleanDialogue(storyTitle)}\n\n`
+    const senseiText = (setting.username === 'Sensei')
+        ? (senseiTranslations[uiLocale] || senseiTranslations['en'])
+        : setting.username;
+    let scriptText = `${titleText}: ${cleanDialogue(storyTitle)}\n\n`;
 
     for (const entry of storyData) {
       if (['cmd', 'video', 'title'].includes(entry.DataType)) continue
@@ -131,10 +142,14 @@ const exportScript = async () => {
       if (entry.DataType === 'speaker') {
         const charInfo = getScenarioDataEntryCharName(entry)
         let speaker = getBestAvailableText(charInfo.Name)
-        if (!speaker) speaker = narratorText
+        if (!speaker) {
+          speaker = narratorText
+        } else if (speaker === 'Sensei') {
+          speaker = senseiText
+        }
         scriptText += `${speaker}: ${dialogue}\n`
       } else if (entry.DataType === 'option') {
-        scriptText += `${setting.username}: ${dialogue}\n`
+        scriptText += `${senseiText}: ${dialogue}\n`
       } else if (['na', 'st', 'stm', 'place'].includes(entry.DataType)) {
         scriptText += `${narratorText}: ${dialogue}\n`
       } else {
