@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, onBeforeUpdate } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useSetting } from '@/stores/setting'
 import ScenarioSearchEntryBond from '@/components/search/ScenarioSearchEntryBond.vue'
 import { getNexonL10nDataFlattened } from '@/tool/StoryTool'
@@ -50,11 +50,6 @@ import { createDictionaryWithDefault } from '@/tool/Utils'
 import { getTranslation } from '@/tool/translate/MtDispatcher'
 import PvMessage from 'primevue/message'
 
-const scenarioEntryRefs = ref<any[]>([])
-
-onBeforeUpdate(() => {
-  scenarioEntryRefs.value = []
-})
 
 const selectType = ref('')
 const i18n = useI18n()
@@ -138,6 +133,8 @@ let dataMainI18nKeyToXxhash: I18nStoryInfoIdToXxhash = {} as I18nStoryInfoIdToXx
 const dataAllLoaded = ref(false)
 
 async function loadAllData() {
+  scenarioEntryRefs.value = []
+
   dataI18nStoryXxhashToL10n = DirectoryDataStoryI18nFileI18nStory.value
 
   dataEventI18nKeyToXxhash = DirectoryDataStoryI18nFileI18nEventIndex.value
@@ -664,6 +661,24 @@ watch(
     )
   }
 )
+
+const scenarioEntryRefs = ref<any[]>([])
+
+watch([selectType, selectEventName, selectMainChapter], () => {
+  scenarioEntryRefs.value = [];
+}, { flush: 'pre' });
+
+const bulkExportScripts = async () => {
+  const validRefs = scenarioEntryRefs.value.filter(el => el && typeof el.exportScript === 'function');
+  if (validRefs.length === 0) return
+  for (const entryComponent of validRefs) {
+    if (entryComponent && typeof entryComponent.exportScript === 'function') {
+      await entryComponent.exportScript()
+      // Wait for a bit to prevent the browser from blocking multiple downloads
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+  }
+}
 </script>
 
 <template>
