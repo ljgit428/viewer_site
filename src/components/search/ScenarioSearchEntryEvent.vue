@@ -6,6 +6,7 @@ import { checkIfScenarioIdIsMain, getScenarioExtraDataById } from '@/tool/StoryT
 import { httpGetAsync } from '@/tool/HttpRequest'
 import { getScenarioDataEntryCharName } from '@/script/ScenarioUiMt'
 import { i18nLangAll } from '@/tool/ConstantComputed'
+import { NexonLangMap } from '@/tool/Constant'
 import ScenarioIsAfterBattleBadge from '@/components/genetic/ScenarioIsAfterBattleBadge.vue'
 import { useSetting } from '@/stores/setting'
 import { useI18n } from 'vue-i18n'
@@ -53,28 +54,52 @@ const exportScript = async () => {
 
     const selectedLangs = i18nLangAll.value.filter((lang) => lang !== 'null')
     const targetLang = selectedLangs.length > 0 ? selectedLangs[0] : 'c_cn'
-    const langFallbacks = ['c_cn', 'g_tw_cn', 'g_tw', 'j_ja', 'g_en']
+    const langFallbacks = ['c_cn', 'g_tw_cn', 'g_tw', 'j_ja', 'g_en'];
+    const uiLocale = NexonLangMap[targetLang] || 'zh_CN';
 
     const getBestAvailableText = (textObject: Record<string, string> | undefined) => {
-      if (!textObject) return ''
+      if (!textObject) return '';
       let text = textObject[targetLang]
       if (text && !text.includes('not found') && !text.includes('LocalizeError')) {
-        return text
+        return text;
       }
       for (const lang of langFallbacks) {
         text = textObject[lang]
         if (text && !text.includes('not found') && !text.includes('LocalizeError')) {
-          return text
+          return text;
         }
       }
-      return ''
+      return '';
     }
+
+    const narratorTranslations: Record<string, string> = {
+        en: 'Narrator',
+        zh_CN: '旁白',
+        zh_TW: '旁白',
+        ja: 'ナレーション',
+        ko: '내레이션',
+        th: 'ผู้บรรยาย',
+    };
+    const titleTranslations: Record<string, string> = {
+        en: 'Title',
+        zh_CN: '标题',
+        zh_TW: '標題',
+        ja: 'タイトル',
+        ko: '제목',
+        th: 'ชื่อเรื่อง',
+    };
 
     const responseText = await httpGetAsync(`/data/story/normal/${storyId}.json`)
     const storyData = JSON.parse(responseText)
 
-    const storyTitle = getBestAvailableText(props.data.name)
-    let scriptText = `${t('comp-search-scenario-datasheet-item-1')}: ${storyTitle}\n\n`
+    const firstTitleEntry = storyData.find((e: any) => e.DataType === 'title');
+    let storyTitle = '';
+    if (firstTitleEntry) {
+        storyTitle = getBestAvailableText(firstTitleEntry.Message);
+    }
+    if (!storyTitle) {
+        storyTitle = getBestAvailableText(props.data.name);
+    }
 
     const cleanDialogue = (text: string) => {
       if (!text) return ''
@@ -87,9 +112,12 @@ const exportScript = async () => {
         .trim()
     }
 
+    const narratorText = narratorTranslations[uiLocale] || narratorTranslations['zh_CN'];
+    const titleText = titleTranslations[uiLocale] || titleTranslations['zh_CN'];
+    let scriptText = `${titleText}: ${cleanDialogue(storyTitle)}\n\n`
+
     for (const entry of storyData) {
       if (['cmd', 'video', 'title'].includes(entry.DataType)) continue
-
       let dialogue = cleanDialogue(getBestAvailableText(entry.Message))
       if (!dialogue) continue
 
@@ -103,18 +131,21 @@ const exportScript = async () => {
       if (entry.DataType === 'speaker') {
         const charInfo = getScenarioDataEntryCharName(entry)
         let speaker = getBestAvailableText(charInfo.Name)
-        if (!speaker) speaker = t('comp-search-result-narrator')
+        if (!speaker) speaker = narratorText
         scriptText += `${speaker}: ${dialogue}\n`
       } else if (entry.DataType === 'option') {
         scriptText += `${setting.username}: ${dialogue}\n`
       } else if (['na', 'st', 'stm', 'place'].includes(entry.DataType)) {
-        scriptText += `${t('comp-search-result-narrator')}: ${dialogue}\n`
+        scriptText += `${narratorText}: ${dialogue}\n`
       } else {
         scriptText += `${dialogue}\n`
       }
     }
 
-    const sanitizedTitle = storyTitle.replace(/[\\?%*:|"<>]/g, '-') || 'scenario'
+    const sanitizedTitle = (storyTitle ? cleanDialogue(storyTitle) : 'scenario').replace(
+      /[\\?%*:|"<>]/g,
+      '-'
+    )
     const blob = new Blob([scriptText], { type: 'text/plain;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
