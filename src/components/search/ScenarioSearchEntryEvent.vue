@@ -189,7 +189,7 @@ defineExpose({
       {{ $t('comp-search-result-btn-view') }}
     </PvButton>
     <span>&nbsp;</span>
-    <PvButton severity="secondary" size="small" @click="exportScript">
+    <PvButton severity="primary" size="small" @click="exportScript">
       {{ $t('comp-search-result-btn-export') }}
     </PvButton>
   </h3>
